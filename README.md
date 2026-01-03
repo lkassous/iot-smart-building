@@ -2,11 +2,19 @@
 
 > **Projet pédagogique** - Plateforme de centralisation, indexation et visualisation de données IoT en temps réel avec la Stack ELK
 
+<!-- Badges CI/CD -->
+[![CI/CD Pipeline](https://github.com/lkassous/iot-smart-building/actions/workflows/ci.yml/badge.svg)](https://github.com/lkassous/iot-smart-building/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/lkassous/iot-smart-building/branch/main/graph/badge.svg)](https://codecov.io/gh/lkassous/iot-smart-building)
+[![Docker Image](https://img.shields.io/badge/ghcr.io-iot--smart--building-blue?logo=docker)](https://ghcr.io/lkassous/iot-smart-building)
+
+<!-- Badges Technologies -->
 [![Docker](https://img.shields.io/badge/Docker-24.x-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.11-005571?logo=elasticsearch&logoColor=white)](https://www.elastic.co/elasticsearch/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Redis](https://img.shields.io/badge/Redis-7.2-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 

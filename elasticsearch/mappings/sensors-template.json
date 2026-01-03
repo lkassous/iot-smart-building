@@ -1,0 +1,66 @@
+{
+  "index_patterns": ["logs-iot-sensors-*"],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.lifecycle.name": "logs-iot-policy",
+      "index.lifecycle.rollover_alias": "logs-iot-sensors"
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "zone": {
+          "type": "keyword"
+        },
+        "sensor_type": {
+          "type": "keyword"
+        },
+        "sensor_id": {
+          "type": "keyword"
+        },
+        "value": {
+          "type": "float"
+        },
+        "unit": {
+          "type": "keyword"
+        },
+        "status": {
+          "type": "keyword"
+        },
+        "floor": {
+          "type": "keyword"
+        },
+        "building": {
+          "type": "keyword"
+        },
+        "tags": {
+          "type": "keyword"
+        },
+        "source_type": {
+          "type": "keyword"
+        },
+        "message": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
+      }
+    }
+  },
+  "data_stream": {},
+  "_meta": {
+    "description": "Template pour les logs IoT sensors",
+    "managed": false
+  }
+}

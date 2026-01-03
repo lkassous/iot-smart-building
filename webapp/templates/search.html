@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-search"></i> Recherche de logs IoT</h2>
+            <p class="text-muted">Filtrez et recherchez dans vos logs de capteurs et alertes</p>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form id="searchForm" action="/results" method="GET">
+                        <!-- Recherche textuelle -->
+                        <div class="mb-3">
+                            <label for="queryInput" class="form-label">Recherche</label>
+                            <input type="text" class="form-control form-control-lg" 
+                                   id="queryInput" name="q" 
+                                   placeholder="Chercher dans les logs...">
+                        </div>
+
+                        <!-- Filtres -->
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label for="levelSelect" class="form-label">Niveau</label>
+                                <select class="form-select" id="levelSelect" name="level">
+                                    <option value="">Tous</option>
+                                    <option value="ok">OK</option>
+                                    <option value="warning">Warning</option>
+                                    <option value="error">Error</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="zoneSelect" class="form-label">Zone</label>
+                                <select class="form-select" id="zoneSelect" name="zone">
+                                    <option value="">Toutes</option>
+                                    <option value="A">Zone A</option>
+                                    <option value="B">Zone B</option>
+                                    <option value="C">Zone C</option>
+                                    <option value="D">Zone D</option>
+                                    <option value="E">Zone E</option>
+                                    <option value="F">Zone F</option>
+                                    <option value="G">Zone G</option>
+                                    <option value="H">Zone H</option>
+                                    <option value="I">Zone I</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="sensorTypeSelect" class="form-label">Type de capteur</label>
+                                <select class="form-select" id="sensorTypeSelect" name="sensor_type">
+                                    <option value="">Tous</option>
+                                    <option value="temperature">Température</option>
+                                    <option value="humidity">Humidité</option>
+                                    <option value="luminosity">Luminosité</option>
+                                    <option value="co2">CO2</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="dateFrom" class="form-label">Date de début</label>
+                                <input type="date" class="form-control" id="dateFrom" name="date_from">
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-3">
+                                <label for="dateTo" class="form-label">Date de fin</label>
+                                <input type="date" class="form-control" id="dateTo" name="date_to">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="perPageSelect" class="form-label">Résultats par page</label>
+                                <select class="form-select" id="perPageSelect" name="per_page">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Rechercher
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                                <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recherches populaires -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-star"></i> Recherches rapides</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/results?level=error" class="badge bg-danger text-decoration-none">Erreurs</a>
+                        <a href="/results?level=warning" class="badge bg-warning text-decoration-none">Warnings</a>
+                        <a href="/results?sensor_type=temperature" class="badge bg-info text-decoration-none">Température</a>
+                        <a href="/results?zone=A" class="badge bg-secondary text-decoration-none">Zone A</a>
+                        <a href="/results?q=anomaly" class="badge bg-danger text-decoration-none">Anomalies</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetForm() {
+    document.getElementById('searchForm').reset();
+}
+
+// Définir la date d'aujourd'hui par défaut
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateTo').value = today;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- En-tête du profil -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                 style="width: 80px; height: 80px; border-radius: 50%; font-size: 32px;">
+                                <i class="bi bi-person-circle"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h2 class="mb-1">{{ user.username }}</h2>
+                            <p class="text-muted mb-2">{{ user.email }}</p>
+                            <span class="badge 
+                                {% if user.role == 'admin' %}bg-danger
+                                {% elif user.role == 'user' %}bg-info
+                                {% else %}bg-secondary{% endif %} me-2">
+                                <i class="bi bi-shield-check"></i> {{ user.role|upper }}
+                            </span>
+                            {% if user.active %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Actif</span>
+                            {% else %}
+                                <span class="badge bg-warning"><i class="bi bi-exclamation-circle"></i> Inactif</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                                <i class="bi bi-pencil"></i> Modifier le profil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations et Permissions -->
+    <div class="row">
+        <!-- Informations du compte -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informations du compte</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td class="text-muted"><strong>Nom d'utilisateur:</strong></td>
+                            <td>{{ user.username }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted"><strong>Email:</strong></td>
+                            <td>{{ user.email }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted"><strong>Rôle:</strong></td>
+                            <td>
+                                <span class="badge 
+                                    {% if user.role == 'admin' %}bg-danger
+                                    {% elif user.role == 'user' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ user.role|upper }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted"><strong>Compte créé le:</strong></td>
+                            <td>{{ user.created_at.strftime('%d/%m/%Y à %H:%M') if user.created_at else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted"><strong>Dernière connexion:</strong></td>
+                            <td>{{ user.last_login.strftime('%d/%m/%Y à %H:%M') if user.last_login else 'Jamais' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted"><strong>Statut:</strong></td>
+                            <td>
+                                {% if user.active %}
+                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i> Actif</span>
+                                {% else %}
+                                    <span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Inactif</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permissions -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Permissions & Droits</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Vous avez les permissions suivantes:</h6>
+                    <div class="list-group">
+                        {% for perm in permissions %}
+                            <div class="list-group-item">
+                                <i class="bi bi-check-circle text-success"></i>
+                                <strong>{{ perm|upper }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if perm == 'read' %}
+                                        Consulter le dashboard, rechercher des logs, voir les statistiques
+                                    {% elif perm == 'write' %}
+                                        Uploader des fichiers, modifier des données
+                                    {% elif perm == 'delete' %}
+                                        Supprimer des fichiers et des données
+                                    {% elif perm == 'admin' %}
+                                        Accès complet à toutes les fonctionnalités d'administration
+                                    {% elif perm == 'manage_users' %}
+                                        Gérer les utilisateurs (créer, modifier, supprimer)
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if user.role == 'viewer' %}
+                        <div class="alert alert-info mt-3">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Rôle Viewer:</strong> Vous avez un accès en lecture seule. 
+                            Contactez un administrateur pour obtenir plus de permissions.
+                        </div>
+                    {% elif user.role == 'user' %}
+                        <div class="alert alert-success mt-3">
+                            <i class="bi bi-check-circle"></i>
+                            <strong>Rôle User:</strong> Vous pouvez lire et écrire des données. 
+                            Vous ne pouvez pas gérer les utilisateurs.
+                        </div>
+                    {% elif user.role == 'admin' %}
+                        <div class="alert alert-danger mt-3">
+                            <i class="bi bi-shield-fill-exclamation"></i>
+                            <strong>Rôle Admin:</strong> Vous avez un accès complet à toutes les fonctionnalités.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques d'utilisation -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Statistiques d'utilisation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="stat-box p-3">
+                                <i class="bi bi-file-earmark-text display-4 text-primary"></i>
+                                <h3 class="mt-2">{{ stats.files_uploaded or 0 }}</h3>
+                                <p class="text-muted">Fichiers uploadés (total)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-box p-3">
+                                <i class="bi bi-search display-4 text-success"></i>
+                                <h3 class="mt-2">{{ stats.searches_count or 0 }}</h3>
+                                <p class="text-muted">Recherches effectuées (total)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-box p-3">
+                                <i class="bi bi-calendar-check display-4 text-warning"></i>
+                                <h3 class="mt-2">
+                                    {% if user.last_login %}
+                                        {{ ((now() - user.last_login).days) }} jours
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </h3>
+                                <p class="text-muted">Depuis la dernière connexion</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de modification du profil -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('auth.update_profile') }}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Modifier mon profil</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ user.email }}" required>
+                        <small class="text-muted">Votre adresse email de contact</small>
+                    </div>
+
+                    <hr>
+                    <h6 class="text-muted"><i class="bi bi-key"></i> Changer le mot de passe (optionnel)</h6>
+
+                    <!-- Mot de passe actuel -->
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Mot de passe actuel</label>
+                        <input type="password" class="form-control" id="current_password" 
+                               name="current_password" autocomplete="current-password">
+                        <small class="text-muted">Requis pour changer le mot de passe</small>
+                    </div>
+
+                    <!-- Nouveau mot de passe -->
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                        <input type="password" class="form-control" id="new_password" 
+                               name="new_password" autocomplete="new-password">
+                        <small class="text-muted">Au moins 6 caractères</small>
+                    </div>
+
+                    <!-- Confirmation -->
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirmer le mot de passe</label>
+                        <input type="password" class="form-control" id="confirm_password" 
+                               name="confirm_password" autocomplete="new-password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.stat-box {
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: transform 0.2s;
+}
+.stat-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

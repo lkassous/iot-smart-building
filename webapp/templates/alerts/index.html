@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Alertes - IoT Smart Building{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-bell text-warning me-2"></i>
+                Gestion des Alertes
+            </h1>
+            <p class="text-muted mb-0">Configurez les règles d'alertes pour surveiller vos capteurs IoT</p>
+        </div>
+        <a href="{{ url_for('alerts.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Nouvelle Règle
+        </a>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2 col-sm-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.total_rules or 0 }}</h2>
+                    <small>Total Règles</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.enabled_rules or 0 }}</h2>
+                    <small>Actives</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="card bg-secondary text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.disabled_rules or 0 }}</h2>
+                    <small>Désactivées</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-4">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.critical_rules or 0 }}</h2>
+                    <small>Critiques</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-8">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.total_triggers or 0 }}</h2>
+                    <small>Total Déclenchements</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Rules Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Règles d'Alertes
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="filterAll">
+                        Toutes
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="filterEnabled">
+                        Actives
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="filterCritical">
+                        Critiques
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if rules %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="rulesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px;">État</th>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Sévérité</th>
+                            <th>Condition</th>
+                            <th>Filtres</th>
+                            <th class="text-center">Triggers</th>
+                            <th>Dernier</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rule in rules %}
+                        <tr data-enabled="{{ 'true' if rule.enabled else 'false' }}" 
+                            data-severity="{{ rule.severity }}">
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input toggle-rule" 
+                                           type="checkbox" 
+                                           data-rule-id="{{ rule._id }}"
+                                           {{ 'checked' if rule.enabled else '' }}>
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ rule.name }}</strong>
+                                {% if rule.description %}
+                                <br><small class="text-muted">{{ rule.description[:50] }}...</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ rule.rule_type }}</span>
+                            </td>
+                            <td>
+                                {% set severity_colors = {'low': 'secondary', 'medium': 'warning', 'high': 'orange', 'critical': 'danger'} %}
+                                <span class="badge bg-{{ severity_colors.get(rule.severity, 'secondary') }}">
+                                    {{ rule.severity | upper }}
+                                </span>
+                            </td>
+                            <td>
+                                <code class="small">
+                                    {% if rule.rule_type == 'threshold' %}
+                                        {{ rule.conditions.field }} {{ rule.conditions.operator }} {{ rule.conditions.threshold }}
+                                    {% elif rule.rule_type == 'range' %}
+                                        {{ rule.conditions.field }} hors [{{ rule.conditions.min_value }}, {{ rule.conditions.max_value }}]
+                                    {% elif rule.rule_type == 'pattern' %}
+                                        ≥{{ rule.conditions.min_count }} events en {{ rule.conditions.time_window_seconds }}s
+                                    {% endif %}
+                                </code>
+                            </td>
+                            <td>
+                                {% if rule.filters %}
+                                    {% for key, value in rule.filters.items() %}
+                                        <span class="badge bg-light text-dark">{{ key }}: {{ value }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-{{ 'warning' if rule.trigger_count else 'light text-dark' }}">
+                                    {{ rule.trigger_count or 0 }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if rule.last_triggered %}
+                                    <small class="text-muted">
+                                        {{ rule.last_triggered.strftime('%d/%m %H:%M') if rule.last_triggered else '-' }}
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted">Jamais</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('alerts.edit', rule_id=rule._id) }}" 
+                                       class="btn btn-outline-primary" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('alerts.history', rule_id=rule._id) }}" 
+                                       class="btn btn-outline-info" title="Historique">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger delete-rule" 
+                                            data-rule-id="{{ rule._id }}" 
+                                            data-rule-name="{{ rule.name }}"
+                                            title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Aucune règle d'alerte configurée</h5>
+                <p class="text-muted">Créez votre première règle pour commencer à surveiller vos capteurs</p>
+                <a href="{{ url_for('alerts.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Créer une règle
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer la règle "<strong id="deleteRuleName"></strong>" ?</p>
+                <p class="text-muted small mb-0">Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle rule enabled/disabled
+    document.querySelectorAll('.toggle-rule').forEach(function(toggle) {
+        toggle.addEventListener('change', function() {
+            const ruleId = this.dataset.ruleId;
+            const checkbox = this;
+            
+            fetch(`/alerts/${ruleId}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI
+                    const row = checkbox.closest('tr');
+                    row.dataset.enabled = data.enabled ? 'true' : 'false';
+                    
+                    // Show toast notification
+                    showToast(data.message, 'success');
+                } else {
+                    // Revert checkbox
+                    checkbox.checked = !checkbox.checked;
+                    showToast(data.error || 'Erreur', 'error');
+                }
+            })
+            .catch(error => {
+                checkbox.checked = !checkbox.checked;
+                showToast('Erreur de connexion', 'error');
+            });
+        });
+    });
+    
+    // Delete rule
+    document.querySelectorAll('.delete-rule').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const ruleId = this.dataset.ruleId;
+            const ruleName = this.dataset.ruleName;
+            
+            document.getElementById('deleteRuleName').textContent = ruleName;
+            document.getElementById('deleteForm').action = `/alerts/${ruleId}/delete`;
+            
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+    
+    // Filter buttons
+    document.getElementById('filterAll').addEventListener('click', function() {
+        filterRules('all');
+    });
+    
+    document.getElementById('filterEnabled').addEventListener('click', function() {
+        filterRules('enabled');
+    });
+    
+    document.getElementById('filterCritical').addEventListener('click', function() {
+        filterRules('critical');
+    });
+    
+    function filterRules(filter) {
+        const rows = document.querySelectorAll('#rulesTable tbody tr');
+        rows.forEach(function(row) {
+            if (filter === 'all') {
+                row.style.display = '';
+            } else if (filter === 'enabled') {
+                row.style.display = row.dataset.enabled === 'true' ? '' : 'none';
+            } else if (filter === 'critical') {
+                row.style.display = row.dataset.severity === 'critical' ? '' : 'none';
+            }
+        });
+    }
+    
+    function showToast(message, type) {
+        // Simple alert for now - could be replaced with a toast library
+        console.log(`[${type}] ${message}`);
+    }
+});
+</script>
+{% endblock %}

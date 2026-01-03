@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-cloud-upload"></i> Upload de fichiers IoT</h2>
+            <p class="text-muted">Formats acceptés : CSV, JSON (max {{ config.MAX_FILE_SIZE_MB }}MB)</p>
+        </div>
+    </div>
+
+    <!-- Zone de drag & drop -->
+    <div class="row mt-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div id="dropZone" class="drop-zone text-center p-5 border border-2 border-dashed rounded">
+                            <i class="bi bi-cloud-arrow-up display-1 text-primary"></i>
+                            <h4 class="mt-3">Glissez-déposez vos fichiers ici</h4>
+                            <p class="text-muted">ou</p>
+                            <label for="fileInput" class="btn btn-primary">
+                                <i class="bi bi-folder2-open"></i> Parcourir les fichiers
+                            </label>
+                            <input type="file" id="fileInput" name="file" class="d-none" accept=".csv,.json,.txt" multiple>
+                        </div>
+                    </form>
+
+                    <!-- Barre de progression -->
+                    <div id="progressContainer" class="mt-3 d-none">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span id="uploadFileName">Fichier.csv</span>
+                            <span id="uploadPercent">0%</span>
+                        </div>
+                        <div class="progress">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div id="messageContainer" class="mt-3"></div>
+                </div>
+            </div>
+
+            <!-- Aperçu du fichier -->
+            <div id="previewCard" class="card mt-3 d-none">
+                <div class="card-header">
+                    <h5><i class="bi bi-eye"></i> Aperçu (10 premières lignes)</h5>
+                </div>
+                <div class="card-body">
+                    <pre id="filePreview" class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des fichiers uploadés -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-file-earmark-text"></i> Fichiers récents</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentFiles">
+                        <div class="text-center text-muted">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-2">Chargement...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.drop-zone {
+    transition: all 0.3s ease;
+}
+
+.drop-zone.drag-over {
+    background-color: #e3f2fd;
+    border-color: #2196F3 !important;
+}
+
+.file-item {
+    border-left: 3px solid #dee2e6;
+    transition: border-color 0.3s;
+}
+
+.file-item.processed {
+    border-left-color: #28a745;
+}
+
+.file-item.processing {
+    border-left-color: #ffc107;
+}
+
+.file-item.error {
+    border-left-color: #dc3545;
+}
+</style>
+
+<script>
+// Variables globales
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const progressContainer = document.getElementById('progressContainer');
+const progressBar = document.getElementById('progressBar');
+const uploadPercent = document.getElementById('uploadPercent');
+const uploadFileName = document.getElementById('uploadFileName');
+const messageContainer = document.getElementById('messageContainer');
+const previewCard = document.getElementById('previewCard');
+const filePreview = document.getElementById('filePreview');
+const recentFiles = document.getElementById('recentFiles');
+
+// Drag & Drop handlers
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFileUpload(files[0]);
+    }
+});
+
+// Click to upload
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleFileUpload(e.target.files[0]);
+    }
+});
+
+// Fonction principale d'upload
+function handleFileUpload(file) {
+    // Validation du fichier
+    const maxSize = parseInt('{{ config.MAX_FILE_SIZE_MB }}') * 1024 * 1024; // MB en bytes
+    const allowedTypes = ['csv', 'json', 'txt'];
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    
+    if (!allowedTypes.includes(fileExtension)) {
+        showMessage('error', `Type de fichier non autorisé. Formats acceptés : ${allowedTypes.join(', ')}`);
+        return;
+    }
+    
+    if (file.size > maxSize) {
+        showMessage('error', 'Fichier trop volumineux (max {{ config.MAX_FILE_SIZE_MB }}MB)');
+        return;
+    }
+    
+    // Aperçu du fichier
+    showFilePreview(file);
+    
+    // Upload
+    uploadFile(file);
+}
+
+// Afficher aperçu
+function showFilePreview(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const content = e.target.result;
+        const lines = content.split('\n').slice(0, 10).join('\n');
+        filePreview.textContent = lines;
+        previewCard.classList.remove('d-none');
+    };
+    reader.readAsText(file);
+}
+
+// Upload AJAX
+function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Afficher la progression
+    uploadFileName.textContent = file.name;
+    progressContainer.classList.remove('d-none');
+    progressBar.style.width = '0%';
+    uploadPercent.textContent = '0%';
+    
+    const xhr = new XMLHttpRequest();
+    
+    // Progression
+    xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + '%';
+            uploadPercent.textContent = percent + '%';
+        }
+    });
+    
+    // Succès
+    xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            showMessage('success', `✅ Fichier uploadé avec succès ! ${response.num_logs || 0} logs détectés.`);
+            progressBar.classList.remove('progress-bar-animated');
+            progressBar.classList.add('bg-success');
+            
+            // Recharger la liste des fichiers
+            setTimeout(() => {
+                loadRecentFiles();
+                progressContainer.classList.add('d-none');
+                fileInput.value = '';
+            }, 2000);
+        } else {
+            const error = JSON.parse(xhr.responseText);
+            showMessage('error', `❌ Erreur : ${error.error || 'Upload échoué'}`);
+            progressBar.classList.add('bg-danger');
+        }
+    });
+    
+    // Erreur
+    xhr.addEventListener('error', () => {
+        showMessage('error', '❌ Erreur réseau lors de l\'upload');
+        progressBar.classList.add('bg-danger');
+    });
+    
+    xhr.open('POST', '/upload', true);
+    xhr.send(formData);
+}
+
+// Afficher message
+function showMessage(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    messageContainer.innerHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+}
+
+// Charger les fichiers récents
+function loadRecentFiles() {
+    fetch('/api/v1/files')
+        .then(response => response.json())
+        .then(data => {
+            if (data.files.length === 0) {
+                recentFiles.innerHTML = '<p class="text-muted text-center">Aucun fichier uploadé</p>';
+                return;
+            }
+            
+            let html = '<div class="list-group list-group-flush">';
+            data.files.slice(0, 10).forEach(file => {
+                const statusIcon = file.status === 'processed' ? 'check-circle-fill text-success' :
+                                 file.status === 'processing' ? 'hourglass-split text-warning' :
+                                 file.status === 'error' ? 'x-circle-fill text-danger' :
+                                 'file-earmark text-secondary';
+                
+                const date = new Date(file.upload_date).toLocaleString('fr-FR');
+                const sizeKB = Math.round(file.file_size / 1024);
+                
+                html += `
+                    <div class="list-group-item file-item ${file.status}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="bi bi-${statusIcon}"></i>
+                                    ${file.filename}
+                                </h6>
+                                <small class="text-muted">
+                                    ${sizeKB} KB • ${file.num_logs} logs<br>
+                                    ${date}
+                                </small>
+                            </div>
+                            <span class="badge bg-secondary">${file.file_type}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            recentFiles.innerHTML = html;
+        })
+        .catch(error => {
+            recentFiles.innerHTML = '<p class="text-danger">Erreur de chargement</p>';
+            console.error('Erreur:', error);
+        });
+}
+
+// Charger au démarrage
+loadRecentFiles();
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # Elasticsearch - Moteur de recherche et d'indexation
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: iot-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - iot-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Logstash - Pipeline d'ingestion de données
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: iot-logstash
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./data/uploads:/usr/share/logstash/uploads
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    networks:
+      - iot-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  # Kibana - Interface de visualisation
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: iot-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    networks:
+      - iot-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # MongoDB - Stockage des métadonnées
+  mongodb:
+    image: mongo:7.0
+    container_name: iot-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+      - MONGO_INITDB_DATABASE=iot_smart_building
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - iot-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Cache et gestion de sessions
+  redis:
+    image: redis:7.2-alpine
+    container_name: iot-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - iot-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application Web Flask
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+    container_name: iot-webapp
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/iot_smart_building?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./webapp:/app
+      - ./data/uploads:/app/uploads
+    networks:
+      - iot-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      logstash:
+        condition: service_started
+
+networks:
+  iot-network:
+    driver: bridge
+
+volumes:
+  elasticsearch-data:
+  mongodb-data:
+  redis-data:

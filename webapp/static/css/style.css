@@ -1,0 +1,127 @@
+/* 
+ * Styles personnalisés pour IoT Smart Building
+ */
+
+:root {
+    --primary-color: #0d6efd;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+}
+
+/* Général */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Navbar */
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Cards KPI */
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Badges de statut */
+.badge-status-ok {
+    background-color: var(--success-color);
+}
+
+.badge-status-warning {
+    background-color: var(--warning-color);
+}
+
+.badge-status-error {
+    background-color: var(--danger-color);
+}
+
+/* Drag & Drop Zone */
+.upload-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 3rem 2rem;
+    text-align: center;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.upload-zone:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.upload-zone.dragover {
+    border-color: var(--success-color);
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.upload-zone i {
+    font-size: 3rem;
+    color: var(--primary-color);
+}
+
+/* Progress bar */
+.upload-progress {
+    display: none;
+}
+
+/* Tables */
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Loading spinner */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Filtres de recherche */
+.search-filters {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .upload-zone {
+        padding: 2rem 1rem;
+    }
+    
+    .upload-zone i {
+        font-size: 2rem;
+    }
+}

@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Historique - {{ rule.name }} - IoT Smart Building{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('alerts.index') }}">Alertes</a></li>
+                <li class="breadcrumb-item active">Historique</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="h3">
+                    <i class="fas fa-history text-info me-2"></i>
+                    Historique: {{ rule.name }}
+                </h1>
+                <p class="text-muted mb-0">{{ rule.description or 'Pas de description' }}</p>
+            </div>
+            <div>
+                {% set severity_colors = {'low': 'secondary', 'medium': 'warning', 'high': 'orange', 'critical': 'danger'} %}
+                <span class="badge bg-{{ severity_colors.get(rule.severity, 'secondary') }} fs-6">
+                    {{ rule.severity | upper }}
+                </span>
+                <span class="badge bg-{{ 'success' if rule.enabled else 'secondary' }} fs-6">
+                    {{ 'Active' if rule.enabled else 'Désactivée' }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Stats Cards -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Statistiques
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 text-center">
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                <h2 class="mb-0 text-primary">{{ rule.trigger_count or 0 }}</h2>
+                                <small class="text-muted">Déclenchements</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                {% if rule.stats and rule.stats.zones_affected %}
+                                <h2 class="mb-0 text-warning">{{ rule.stats.zones_affected | length }}</h2>
+                                {% else %}
+                                <h2 class="mb-0 text-secondary">0</h2>
+                                {% endif %}
+                                <small class="text-muted">Zones touchées</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                {% if rule.stats and rule.stats.avg_value_on_trigger %}
+                                <h2 class="mb-0 text-danger">{{ '%.1f' | format(rule.stats.avg_value_on_trigger) }}</h2>
+                                {% else %}
+                                <h2 class="mb-0 text-secondary">-</h2>
+                                {% endif %}
+                                <small class="text-muted">Valeur moyenne</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                <h2 class="mb-0 text-info">{{ rule.cooldown_seconds // 60 }}m</h2>
+                                <small class="text-muted">Cooldown</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rule Details -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Détails de la règle
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="mb-0">
+                        <dt>Type:</dt>
+                        <dd><span class="badge bg-info">{{ rule.rule_type }}</span></dd>
+                        
+                        <dt>Condition:</dt>
+                        <dd>
+                            <code>
+                                {% if rule.rule_type == 'threshold' %}
+                                    {{ rule.conditions.field }} {{ rule.conditions.operator }} {{ rule.conditions.threshold }}
+                                {% elif rule.rule_type == 'range' %}
+                                    {{ rule.conditions.field }} hors [{{ rule.conditions.min_value }}, {{ rule.conditions.max_value }}]
+                                {% elif rule.rule_type == 'pattern' %}
+                                    ≥{{ rule.conditions.min_count }} events en {{ rule.conditions.time_window_seconds }}s
+                                {% endif %}
+                            </code>
+                        </dd>
+                        
+                        {% if rule.filters %}
+                        <dt>Filtres:</dt>
+                        <dd>
+                            {% for key, value in rule.filters.items() %}
+                            <span class="badge bg-light text-dark">{{ key }}: {{ value }}</span>
+                            {% endfor %}
+                        </dd>
+                        {% endif %}
+                        
+                        {% if rule.actions %}
+                        <dt>Actions:</dt>
+                        <dd>
+                            {% for action in rule.actions %}
+                            <span class="badge bg-primary">{{ action.type }}</span>
+                            {% endfor %}
+                        </dd>
+                        {% endif %}
+                        
+                        <dt>Dernier déclenchement:</dt>
+                        <dd>
+                            {% if rule.last_triggered %}
+                            {{ rule.last_triggered.strftime('%d/%m/%Y à %H:%M:%S') }}
+                            {% else %}
+                            <span class="text-muted">Jamais déclenché</span>
+                            {% endif %}
+                        </dd>
+                        
+                        {% if rule.stats and rule.stats.zones_affected %}
+                        <dt>Zones affectées:</dt>
+                        <dd>
+                            {% for zone in rule.stats.zones_affected %}
+                            <span class="badge bg-warning text-dark">Zone {{ zone }}</span>
+                            {% endfor %}
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline / History -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Historique des déclenchements
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary" id="refreshHistory">
+                        <i class="fas fa-sync-alt me-1"></i>Actualiser
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if rule.trigger_count and rule.trigger_count > 0 %}
+                    <!-- Timeline -->
+                    <div class="timeline">
+                        {% if rule.last_triggered %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-danger"></div>
+                            <div class="timeline-content">
+                                <div class="d-flex justify-content-between">
+                                    <strong>Dernier déclenchement</strong>
+                                    <small class="text-muted">{{ rule.last_triggered.strftime('%d/%m/%Y %H:%M:%S') }}</small>
+                                </div>
+                                <p class="mb-0 text-muted">
+                                    {% if rule.stats and rule.stats.zones_affected %}
+                                    Zones: {{ rule.stats.zones_affected | join(', ') }}
+                                    {% endif %}
+                                    {% if rule.stats and rule.stats.avg_value_on_trigger %}
+                                    | Valeur moyenne: {{ '%.2f' | format(rule.stats.avg_value_on_trigger) }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Placeholder for more history items -->
+                        <div class="text-center py-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                L'historique détaillé sera disponible dans une prochaine version
+                            </small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5 class="text-muted">Aucun déclenchement</h5>
+                        <p class="text-muted mb-0">Cette règle n'a jamais été déclenchée.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Test Rule Card -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-flask me-2"></i>
+                        Tester la règle
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Testez la règle sur les données de la dernière heure pour vérifier qu'elle fonctionne correctement.
+                    </p>
+                    <button class="btn btn-warning" id="testRule" data-rule-id="{{ rule._id }}">
+                        <i class="fas fa-play me-2"></i>Lancer le test
+                    </button>
+                    <div id="testResults" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <strong>Résultats du test:</strong>
+                            <div id="testResultsContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="mt-4">
+        <a href="{{ url_for('alerts.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+        </a>
+        <a href="{{ url_for('alerts.edit', rule_id=rule._id) }}" class="btn btn-primary">
+            <i class="fas fa-edit me-2"></i>Modifier la règle
+        </a>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -24px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Test rule
+    document.getElementById('testRule').addEventListener('click', function() {
+        const ruleId = this.dataset.ruleId;
+        const resultsDiv = document.getElementById('testResults');
+        const contentDiv = document.getElementById('testResultsContent');
+        
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Test en cours...';
+        
+        fetch(`/alerts/api/rules/${ruleId}/test`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            resultsDiv.style.display = '';
+            
+            if (data.error) {
+                contentDiv.innerHTML = `<p class="text-danger mb-0">${data.error}</p>`;
+            } else {
+                contentDiv.innerHTML = `
+                    <ul class="mb-0">
+                        <li>Logs analysés: <strong>${data.total_logs_checked}</strong></li>
+                        <li>Déclenchement: <strong class="${data.is_triggered ? 'text-danger' : 'text-success'}">
+                            ${data.is_triggered ? 'OUI' : 'NON'}
+                        </strong></li>
+                        <li>Événements correspondants: <strong>${data.matching_count}</strong></li>
+                    </ul>
+                `;
+            }
+        })
+        .catch(error => {
+            resultsDiv.style.display = '';
+            contentDiv.innerHTML = `<p class="text-danger mb-0">Erreur: ${error}</p>`;
+        })
+        .finally(() => {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-play me-2"></i>Lancer le test';
+        });
+    });
+});
+</script>
+{% endblock %}

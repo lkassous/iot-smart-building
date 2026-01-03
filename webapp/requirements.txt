@@ -1,0 +1,37 @@
+# Flask et extensions
+Flask==3.0.0
+flask-restful==0.3.10
+flask-cors==4.0.0
+flask-login==0.6.3
+flask-swagger-ui==4.11.1
+flask-socketio==5.3.5
+flask-mail==0.9.1
+flasgger==0.9.7.1
+Jinja2==3.1.2
+
+# Serveur WSGI
+gunicorn==21.2.0
+eventlet==0.33.3
+gevent==24.2.1
+gevent-websocket==0.10.1
+
+# Base de données et cache
+elasticsearch==8.11.0
+pymongo==4.6.1
+redis==5.0.1
+
+# Utilitaires
+python-dotenv==1.0.0
+python-multipart==0.0.6
+Werkzeug==3.0.1
+
+# Génération de données test
+Faker==20.1.0
+
+# Tests
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-flask==1.3.0
+
+# Validation et formatage
+python-dateutil==2.8.2

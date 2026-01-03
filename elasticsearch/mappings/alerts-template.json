@@ -1,0 +1,69 @@
+{
+  "index_patterns": ["logs-iot-alerts-*"],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.lifecycle.name": "logs-iot-policy",
+      "index.lifecycle.rollover_alias": "logs-iot-alerts"
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "zone": {
+          "type": "keyword"
+        },
+        "sensor_id": {
+          "type": "keyword"
+        },
+        "sensor": {
+          "type": "keyword"
+        },
+        "message": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "severity": {
+          "type": "keyword"
+        },
+        "alert_type": {
+          "type": "keyword"
+        },
+        "event_type": {
+          "type": "keyword"
+        },
+        "value": {
+          "type": "float"
+        },
+        "floor": {
+          "type": "keyword"
+        },
+        "building": {
+          "type": "keyword"
+        },
+        "tags": {
+          "type": "keyword"
+        },
+        "source_type": {
+          "type": "keyword"
+        }
+      }
+    }
+  },
+  "data_stream": {},
+  "_meta": {
+    "description": "Template pour les logs IoT alerts",
+    "managed": false
+  }
+}

@@ -3,7 +3,11 @@ version: '3.8'
 services:
   # Elasticsearch - Moteur de recherche et d'indexation
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    # Image personnalisée avec mappings IoT (ou image officielle)
+    # image: ghcr.io/lkassous/iot-smart-building-elasticsearch:latest
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
     container_name: iot-elasticsearch
     environment:
       - discovery.type=single-node
@@ -25,7 +29,11 @@ services:
 
   # Logstash - Pipeline d'ingestion de données
   logstash:
-    image: docker.elastic.co/logstash/logstash:8.11.0
+    # Image personnalisée avec pipelines IoT (ou image officielle)
+    # image: ghcr.io/lkassous/iot-smart-building-logstash:latest
+    build:
+      context: ./logstash
+      dockerfile: Dockerfile
     container_name: iot-logstash
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
@@ -44,7 +52,11 @@ services:
 
   # Kibana - Interface de visualisation
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
+    # Image personnalisée avec dashboards IoT (ou image officielle)
+    # image: ghcr.io/lkassous/iot-smart-building-kibana:latest
+    build:
+      context: ./kibana
+      dockerfile: Dockerfile
     container_name: iot-kibana
     ports:
       - "5601:5601"
@@ -100,6 +112,8 @@ services:
 
   # Application Web Flask
   webapp:
+    # Image personnalisée Flask (ou build local)
+    # image: ghcr.io/lkassous/iot-smart-building-webapp:latest
     build:
       context: ./webapp
       dockerfile: Dockerfile

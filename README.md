@@ -5,7 +5,12 @@
 <!-- Badges CI/CD -->
 [![CI/CD Pipeline](https://github.com/lkassous/iot-smart-building/actions/workflows/ci.yml/badge.svg)](https://github.com/lkassous/iot-smart-building/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/lkassous/iot-smart-building/branch/main/graph/badge.svg)](https://codecov.io/gh/lkassous/iot-smart-building)
-[![Docker Image](https://img.shields.io/badge/ghcr.io-iot--smart--building-blue?logo=docker)](https://ghcr.io/lkassous/iot-smart-building)
+
+<!-- Badges Docker Images -->
+[![Webapp Image](https://img.shields.io/badge/ghcr.io-webapp-blue?logo=docker)](https://ghcr.io/lkassous/iot-smart-building-webapp)
+[![Logstash Image](https://img.shields.io/badge/ghcr.io-logstash-orange?logo=docker)](https://ghcr.io/lkassous/iot-smart-building-logstash)
+[![Elasticsearch Image](https://img.shields.io/badge/ghcr.io-elasticsearch-yellow?logo=docker)](https://ghcr.io/lkassous/iot-smart-building-elasticsearch)
+[![Kibana Image](https://img.shields.io/badge/ghcr.io-kibana-pink?logo=docker)](https://ghcr.io/lkassous/iot-smart-building-kibana)
 
 <!-- Badges Technologies -->
 [![Docker](https://img.shields.io/badge/Docker-24.x-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
@@ -125,10 +130,29 @@ docker-compose --version  # Docker Compose version v2.20.0+
 
 ## 🚀 Installation
 
+### Option 1: Utiliser les images Docker prébuilt (Recommandé)
+
+```bash
+# Pull les 4 images depuis GitHub Container Registry
+docker pull ghcr.io/lkassous/iot-smart-building-webapp:latest
+docker pull ghcr.io/lkassous/iot-smart-building-logstash:latest
+docker pull ghcr.io/lkassous/iot-smart-building-elasticsearch:latest
+docker pull ghcr.io/lkassous/iot-smart-building-kibana:latest
+
+# Cloner le repo pour docker-compose.yml
+git clone https://github.com/lkassous/iot-smart-building.git
+cd iot-smart-building
+
+# Démarrer avec les images prébuilt (décommentez les lignes "image:" dans docker-compose.yml)
+docker-compose up -d
+```
+
+### Option 2: Build local depuis le code source
+
 ### 1. Cloner le repository
 
 ```bash
-git clone https://github.com/votre-username/iot-smart-building.git
+git clone https://github.com/lkassous/iot-smart-building.git
 cd iot-smart-building
 ```
 

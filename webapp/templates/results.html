@@ -88,6 +88,8 @@ const filters = {
 
 // Charger les résultats
 function loadResults() {
+    console.log('loadResults() called with filters:', filters);
+    
     // Construire l'URL de l'API
     const apiUrl = new URL('/api/v1/logs', window.location.origin);
     Object.keys(filters).forEach(key => {
@@ -95,20 +97,31 @@ function loadResults() {
             apiUrl.searchParams.append(key, filters[key]);
         }
     });
+    
+    console.log('API URL:', apiUrl.toString());
 
     fetch(apiUrl)
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Data received:', data);
             displayFilters(data);
             displayResults(data);
             displayPagination(data);
         })
         .catch(error => {
-            console.error('Erreur:', error);
+            console.error('Erreur détaillée:', error);
             document.getElementById('tableContainer').innerHTML = `
                 <div class="alert alert-danger">
                     <i class="bi bi-exclamation-triangle"></i>
-                    Erreur lors du chargement des résultats
+                    Erreur lors du chargement des résultats: ${error.message}
+                    <br><small>Vérifiez la console du navigateur pour plus de détails.</small>
                 </div>
             `;
         });

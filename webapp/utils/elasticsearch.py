@@ -183,13 +183,13 @@ class ElasticsearchClient:
                 })
             
             if level:
-                must_clauses.append({"term": {"status": level}})
+                must_clauses.append({"match": {"status": level}})
             
             if zone:
-                must_clauses.append({"term": {"zone": zone}})
+                must_clauses.append({"match": {"zone": zone}})
             
             if sensor_type:
-                must_clauses.append({"term": {"sensor_type": sensor_type}})
+                must_clauses.append({"match": {"sensor_type": sensor_type}})
             
             if date_from or date_to:
                 range_query = {"range": {"@timestamp": {}}}
@@ -220,7 +220,9 @@ class ElasticsearchClient:
                 "size": per_page
             }
             
+            print(f"DEBUG search_logs: body = {body}")
             response = self.client.search(index=f"{self.index_sensors},{self.index_alerts}", body=body)
+            print(f"DEBUG search_logs: total = {response['hits']['total']['value']}")
             
             # Extraction des résultats
             logs = []

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="bi bi-search"></i> Recherche Simple de Logs IoT</h2>
+            <p class="text-muted">Version simplifiée pour débugger les problèmes de recherche</p>
+        </div>
+    </div>
+
+    <!-- Formulaire de recherche -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-funnel"></i> Filtres de recherche</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="/simple_results">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="zone" class="form-label">Zone</label>
+                                <select class="form-select" id="zone" name="zone">
+                                    <option value="">Toutes les zones</option>
+                                    {% for zone in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'] %}
+                                    <option value="{{ zone }}" {% if request.args.get('zone') == zone %}selected{% endif %}>Zone {{ zone }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sensor_type" class="form-label">Type de capteur</label>
+                                <select class="form-select" id="sensor_type" name="sensor_type">
+                                    <option value="">Tous les types</option>
+                                    {% for type in ['temperature', 'humidity', 'luminosity', 'co2'] %}
+                                    <option value="{{ type }}" {% if request.args.get('sensor_type') == type %}selected{% endif %}>{{ type.title() }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="">Tous les status</option>
+                                    {% for status in ['ok', 'warning', 'error'] %}
+                                    <option value="{{ status }}" {% if request.args.get('status') == status %}selected{% endif %}>{{ status.title() }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="limit" class="form-label">Nombre de résultats</label>
+                                <select class="form-select" id="limit" name="limit">
+                                    <option value="10" {% if request.args.get('limit') == '10' %}selected{% endif %}>10</option>
+                                    <option value="50" {% if request.args.get('limit') == '50' %}selected{% endif %}>50</option>
+                                    <option value="100" {% if request.args.get('limit') == '100' %}selected{% endif %}>100</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Rechercher
+                                </button>
+                                <a href="/simple_search" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Raccourcis -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Recherches rapides</h6>
+                </div>
+                <div class="card-body">
+                    <a href="/simple_results?sensor_type=temperature" class="badge bg-info text-decoration-none me-2">Température</a>
+                    <a href="/simple_results?sensor_type=humidity" class="badge bg-success text-decoration-none me-2">Humidité</a>
+                    <a href="/simple_results?zone=A" class="badge bg-secondary text-decoration-none me-2">Zone A</a>
+                    <a href="/simple_results?status=warning" class="badge bg-warning text-decoration-none me-2">Warnings</a>
+                    <a href="/simple_results?status=error" class="badge bg-danger text-decoration-none me-2">Erreurs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

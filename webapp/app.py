@@ -395,6 +395,100 @@ def results_page():
     return render_template('results.html', page_title='Résultats', query=query)
 
 
+@app.route('/test_api')
+@login_required
+def test_api():
+    """Page de test de l'API (développement)"""
+    return send_from_directory('.', 'test_api.html')
+
+
+@app.route('/debug_search')
+@login_required  
+def debug_search():
+    """Page de debug pour la recherche (développement)"""
+    return send_from_directory('.', 'debug_search.html')
+
+
+@app.route('/simple_search')
+@login_required
+@permission_required('read')
+def simple_search():
+    """Page de recherche simplifiée sans JavaScript"""
+    return render_template('simple_search.html', page_title='Recherche Simple')
+
+
+@app.route('/simple_results')
+@login_required
+@permission_required('read')
+def simple_results():
+    """Page de résultats simplifiée avec rendu côté serveur"""
+    try:
+        # Récupérer les paramètres de filtre
+        filters = {
+            'zone': request.args.get('zone', ''),
+            'sensor_type': request.args.get('sensor_type', ''),
+            'status': request.args.get('status', ''),
+            'limit': int(request.args.get('limit', 50))
+        }
+        
+        # Nettoyer les filtres vides
+        clean_filters = {k: v for k, v in filters.items() if v and k != 'limit'}
+        
+        # Construire la requête Elasticsearch
+        query_body = {
+            'query': {'bool': {'must': []}},
+            'sort': [{'@timestamp': {'order': 'desc'}}],
+            'size': filters['limit']
+        }
+        
+        # Ajouter les filtres
+        if clean_filters.get('zone'):
+            query_body['query']['bool']['must'].append({
+                'match': {'zone': clean_filters['zone']}
+            })
+        
+        if clean_filters.get('sensor_type'):
+            query_body['query']['bool']['must'].append({
+                'match': {'sensor_type': clean_filters['sensor_type']}
+            })
+            
+        if clean_filters.get('status'):
+            query_body['query']['bool']['must'].append({
+                'match': {'status': clean_filters['status']}
+            })
+        
+        # Si aucun filtre, utiliser match_all
+        if not query_body['query']['bool']['must']:
+            query_body['query'] = {'match_all': {}}
+        
+        # Exécuter la requête avec la méthode search_logs()
+        result_data = es_client.search_logs(
+            zone=clean_filters.get('zone'),
+            sensor_type=clean_filters.get('sensor_type'), 
+            level=clean_filters.get('status'),
+            per_page=filters['limit']
+        )
+        
+        logs = result_data['logs']
+        total_hits = result_data['total']
+        
+        return render_template('simple_results.html',
+                             page_title='Résultats Simples',
+                             logs=logs,
+                             total_results=total_hits,
+                             filters=clean_filters,
+                             error=None)
+                             
+    except Exception as e:
+        logging.error(f"Erreur recherche simple: {e}")
+        return render_template('simple_results.html',
+                             page_title='Résultats Simples',
+                             logs=[],
+                             total_results=0,
+                             filters={},
+                             error=str(e))
+
+
 # ============================================================================
 # API ENDPOINTS
 # ============================================================================
@@ -517,6 +611,8 @@ def api_stats():
 
 
 @app.route('/api/v1/logs')
+@login_required
+@permission_required('read')
 def api_logs():
     """
     Recherche de logs IoT avec filtres

@@ -46,9 +46,26 @@ def validate_csv_structure(filepath, max_preview_lines=10):
                 result['errors'].append('Fichier CSV vide')
                 return result
             
-            # Vérifier les colonnes requises pour les sensors
+            # Vérifier les colonnes requises pour les sensors (accepter différentes variantes)
             required_columns = ['timestamp', 'zone', 'sensor_type', 'sensor_id', 'value', 'unit', 'status']
-            missing_columns = [col for col in required_columns if col not in headers]
+            
+            # Normaliser les en-têtes (minuscules et mapping des variantes)
+            normalized_headers = []
+            column_mapping = {
+                'timestamp': 'timestamp',
+                'zone': 'zone', 
+                'sensor_type': 'sensor_type', 'type': 'sensor_type',
+                'sensor_id': 'sensor_id', 'capteur': 'sensor_id', 'id': 'sensor_id',
+                'value': 'value', 'valeur': 'value', 'val': 'value',
+                'unit': 'unit', 'unité': 'unit', 'unite': 'unit',
+                'status': 'status', 'statut': 'status', 'state': 'status'
+            }
+            
+            for header in headers:
+                normalized_name = column_mapping.get(header.lower(), header.lower())
+                normalized_headers.append(normalized_name)
+            
+            missing_columns = [col for col in required_columns if col not in normalized_headers]
             
             if missing_columns:
                 result['errors'].append(f'Colonnes manquantes : {", ".join(missing_columns)}')

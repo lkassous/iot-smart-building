@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.3'
 
 services:
   # Elasticsearch - Moteur de recherche et d'indexation
@@ -47,8 +47,7 @@ services:
     networks:
       - iot-network
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
 
   # Kibana - Interface de visualisation
   kibana:
@@ -66,8 +65,7 @@ services:
     networks:
       - iot-network
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - elasticsearch
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
       interval: 30s
@@ -133,14 +131,10 @@ services:
     networks:
       - iot-network
     depends_on:
-      elasticsearch:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      logstash:
-        condition: service_started
+      - elasticsearch
+      - mongodb
+      - redis
+      - logstash
 
 networks:
   iot-network:
